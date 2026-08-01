@@ -344,7 +344,7 @@ def emit_context(text):
 
 
 def export_env(name, value):
-    """Persist an env var into the session, codex's session-lifecycle trick."""
+    """Persist an env var for the rest of the session via $CLAUDE_ENV_FILE."""
     env_file = os.environ.get("CLAUDE_ENV_FILE")
     if not env_file or not value:
         return

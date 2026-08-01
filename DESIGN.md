@@ -218,9 +218,10 @@ These are the difference between a plugin colleagues keep and one they
 uninstall in a week.
 
 - **Fail open, always.** Every hook path exits 0 and stays silent on any
-  unexpected condition. `mempalace` returns 1 when its runtime is missing and
-  prints an error on *every* Stop; that is the counterexample. If `python3` is
-  absent, `hooks/run.sh` exits 0 and the plugin simply does nothing.
+  unexpected condition. The counterexample seen in the wild: a plugin whose
+  Stop hook returns 1 when its runtime is missing, printing an error on
+  *every* turn until the user uninstalls it. If `python3` is absent,
+  `hooks/run.sh` exits 0 and the plugin simply does nothing.
 - **Inert until configured.** No journal is written before `projects.md`
   exists. Decline is permanent, recorded in `.declined`, and never raised again;
   `/alibi-setup` is the way back.
