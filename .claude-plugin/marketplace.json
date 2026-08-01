@@ -1,14 +1,14 @@
 {
-  "name": "alibi-dev",
-  "description": "Local development marketplace for alibi. DELETE THIS FILE before publishing the plugin to a real marketplace.",
+  "name": "jank-plugins",
+  "description": "Jank's plugins for Claude Code and Codex — personal tools, public and shareable",
   "owner": {
     "name": "Jan Krapac"
   },
   "plugins": [
     {
       "name": "alibi",
-      "source": "./",
-      "description": "Passive work-log capture and daily reconciliation"
+      "source": "./plugins/alibi",
+      "description": "Passive work-log capture and daily reconciliation — turns coding sessions into a timesheet-ready log"
     }
   ]
 }

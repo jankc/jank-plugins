@@ -328,8 +328,8 @@ cd /some/git/repo && echo '{"session_id":"t","cwd":"'$PWD'"}' \
 End-to-end still requires an install and a restart:
 
 ```
-/plugin marketplace add /path/to/alibi
-/plugin install alibi@alibi-dev
+/plugin marketplace add /path/to/jank-plugins
+/plugin install alibi@jank-plugins
 ```
 
 Check `/hooks` lists all three, that a `session` record and one `beat` per turn
@@ -338,23 +338,22 @@ re-nudge.
 
 ---
 
-## Publishing to a marketplace
+## Marketplace
 
-The plugin is deliberately company-unaware: nothing in it names an employer, a
-tracker, or a marketplace. Anything organization-specific — a name prefix, a
-category, a policy entry — belongs to the target marketplace and is applied at
-publish time, not baked in here.
+Alibi lives at `plugins/alibi/` inside the `jank-plugins` marketplace
+repository and is developed in place — there is no separate plugin repository
+and no copy step. Publishing a change means committing and pushing; users pick
+it up with `/plugin marketplace update`.
 
-1. Delete `.claude-plugin/marketplace.json` — local development only.
-2. Copy the folder into the marketplace's plugins directory. If its naming
-   conventions require a prefix, rename the folder *and* the `name` field in
-   both plugin manifests as part of the copy.
-3. Add catalog entries wherever the marketplace keeps them — some maintain
-   more than one catalog (e.g. one per client); the plugin must land in all of
-   them or updates silently miss users.
-4. Add an ownership entry (`CODEOWNERS` or equivalent) and run whatever audit
-   tooling the marketplace provides before merging.
-
-Version bumps must land in **both** plugin manifests (`.claude-plugin/` and
-`.codex-plugin/`), or `/plugin marketplace update` is a no-op for existing
-users.
+- The catalogs sit at the repository root and must **both** list the plugin:
+  `.claude-plugin/marketplace.json` (Claude Code, string `source`) and
+  `.agents/plugins/marketplace.json` (Codex, object `source` plus `policy` and
+  `category`).
+- The plugin itself stays company-unaware: nothing in it names an employer, a
+  tracker, or another plugin. To republish it into some other marketplace,
+  copy `plugins/alibi/` there and apply that marketplace's conventions — name
+  prefixes, categories, policy entries — in the copy, in both plugin
+  manifests, never here.
+- Version bumps must land in **both** plugin manifests (`.claude-plugin/` and
+  `.codex-plugin/`), or `/plugin marketplace update` is a no-op for existing
+  users.
