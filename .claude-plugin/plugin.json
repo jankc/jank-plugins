@@ -1,0 +1,17 @@
+{
+  "name": "lnd-alibi",
+  "version": "0.1.0",
+  "description": "Passive work-log capture and daily reconciliation - turns Claude Code sessions into a timesheet-ready log of tickets and internal projects",
+  "author": {
+    "name": "Jan Krapac",
+    "email": "jan.krapac@lundegaard.eu"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "worklog",
+    "timesheet",
+    "tickets",
+    "reporting",
+    "productivity"
+  ]
+}
