@@ -96,6 +96,26 @@ python3 "$ALIBI_SCRIPT" note --skip
 Keep this to one short line to the user. The nudge fires at most once per
 session; do not turn it into a conversation.
 
+## Personal and non-work time
+
+Projects marked `report: false` in `projects.md` are personal, not work: their
+time is captured, but they are never nudged for a note, never enter the totals
+or the normalized column, and `/alibi-day` lists them only under
+`NOT REPORTED`. Leave them out of the log entry.
+
+When the user says a session was personal ("that was my own stuff"), record a
+note against a `report: false` project — an explicit project on a note always
+beats the directory mapping, so this also reroutes a personal session that
+happened inside a work directory:
+
+```bash
+python3 "$ALIBI_SCRIPT" note --project "Own stuff" --bullet "personal tinkering"
+```
+
+If no `report: false` project exists yet, offer to add one (a section with
+just `- report: false` is enough; `paths` is optional) rather than inventing a
+work label for personal time.
+
 ## Reconciling a day
 
 ```bash
@@ -115,7 +135,9 @@ Then:
    produced work. Show each draft, let the user rename or reject it, and append
    the accepted ones to `projects.md` — this is the one moment where asking
    about new projects is appropriate. Buckets with no notes: reconstruct from
-   the commits, and say that is what you did.
+   the commits, and say that is what you did. Anything under `NOT REPORTED`
+   is personal time — it may be mentioned in conversation, but it never goes
+   into the entry.
 3. **Draft the entry** in the format below and show it before writing.
 4. **Write it** to the log path named at the bottom of the report. Append; if
    a `heading` is configured, append under it; create the file with a
@@ -228,8 +250,9 @@ is how they come back. A colleague nagged every session uninstalls the plugin.
 Project sections take `ticket:` (free-text hint about how this project's
 tickets are identified; `jira:` is accepted as a synonym), `paths:`
 (comma-separated), `report-as:` (the label to use in the log when it differs
-from the section name) and `note:` (free text you should read when deciding
-how to report the work).
+from the section name), `report:` (`false` marks a personal project — captured
+but never nudged, never reported) and `note:` (free text you should read when
+deciding how to report the work).
 
 Git worktrees resolve to their main checkout, so one `paths` entry for the
 repository covers every worktree of it.

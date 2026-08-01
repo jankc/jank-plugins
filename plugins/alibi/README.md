@@ -101,6 +101,18 @@ log: "~/Obsidian/Vault/Daily/{yyyy}-{mm}-{dd}.md"
 heading: "## Work log"
 ```
 
+Working on your own stuff? Mark the project `report: false` and its time is
+captured but never reported: no note nudges, excluded from totals and
+normalization, shown only as a `NOT REPORTED` line in `/alibi-day` so you can
+see the exclusion happened. A one-off personal session in a work directory can
+be rerouted the same way — record a note against any `report: false` project.
+
+```markdown
+## Own stuff
+- paths: ~/dev/personal
+- report: false
+```
+
 ## Reported time is measured, not invented
 
 The daily report shows two columns. **Actual** is measured active time, rounded
@@ -147,6 +159,7 @@ ALIBI_HOME=/tmp/alibi-test python3 scripts/alibi.py day 2026-08-01
 ```
 
 The fixture covers overlapping parallel sessions, a meeting-sized gap, a
-too-short session, an unmapped repository and a session crossing midnight.
+too-short session, an unmapped repository, a session crossing midnight and a
+`report: false` personal project.
 
 Marketplace notes are at the end of [`DESIGN.md`](DESIGN.md).

@@ -220,7 +220,8 @@ def load_config_and_projects():
         stripped = line.strip()
         if stripped.startswith("## "):
             current = {"name": stripped[3:].strip(), "ticket": "",
-                       "paths": [], "report_as": "", "note": ""}
+                       "paths": [], "report_as": "", "note": "",
+                       "report": True}
             projects.append(current)
             continue
         if current is None or not stripped.startswith("- "):
@@ -240,6 +241,10 @@ def load_config_and_projects():
             current["ticket"] = value
         elif key in ("report_as", "note"):
             current[key] = value
+        elif key == "report":
+            # `report: false` marks a personal project: captured, but never
+            # nudged and never reported.
+            current["report"] = value.lower() not in ("false", "0", "no", "off")
 
     return cfg, projects
 
@@ -257,6 +262,14 @@ def match_project(path, projects):
                 if len(base) > best_len:
                     best, best_len = project, len(base)
     return best
+
+
+def find_project_by_name(name, projects):
+    """Look a project up by section name or report-as label."""
+    for project in projects:
+        if name in (project["name"], project.get("report_as")):
+            return project
+    return None
 
 
 def resolve_log_path(cfg, date):
@@ -573,6 +586,11 @@ def cmd_session_start(argv):
              ""]
     if project:
         parts.append("Current directory maps to project: %s" % project["name"])
+        if not project.get("report", True):
+            parts.append("This project is marked `report: false` - personal, "
+                         "not work. Time here is captured but excluded from "
+                         "work reports, and Alibi will not ask for a session "
+                         "note.")
         if project.get("ticket"):
             parts.append("Ticket hint for this project: %s" % project["ticket"])
         if project.get("report_as"):
@@ -608,6 +626,8 @@ def cmd_session_start(argv):
             bits.append("ticket:%s" % project["ticket"])
         if project.get("report_as"):
             bits.append("report-as:%s" % project["report_as"])
+        if not project.get("report", True):
+            bits.append("report:false (personal - never reported)")
         parts.append("  - %s" % "  ".join(bits))
         for path in project["paths"]:
             parts.append("      %s" % path)
@@ -632,7 +652,7 @@ def cmd_turn(argv):
     stamp = now()
     append_record({"t": "beat", "at": stamp.isoformat(), "sid": sid})
 
-    cfg, _ = load_config_and_projects()
+    cfg, projects = load_config_and_projects()
     state = read_state(sid)
     state["sid"] = sid
     state["turns"] = int(state.get("turns") or 0) + 1
@@ -643,6 +663,12 @@ def cmd_turn(argv):
     if not cfg["nudge"] or state.get("nudged") or state.get("noted"):
         return 0
     if state["turns"] < cfg["min_turns"]:
+        return 0
+
+    # Personal (`report: false`) projects never reach a report, so asking for
+    # a session note would be pure interruption.
+    project = match_project(state.get("repo") or state.get("cwd"), projects)
+    if project and not project.get("report", True):
         return 0
 
     started = parse_ts(state.get("started")) or stamp
@@ -887,7 +913,12 @@ def cmd_day(argv):
         for note in real_notes:
             ticket = note.get("ticket") or ticket
             project_name = note.get("project") or project_name
-        if not project_name:
+        if project_name:
+            # An explicit project on a note always wins - including a
+            # `report: false` one, which is how a personal session inside a
+            # work directory is rerouted off the log.
+            project = find_project_by_name(project_name, projects)
+        else:
             project = match_project(cwd, projects)
             if project:
                 project_name = project.get("report_as") or project["name"]
@@ -899,7 +930,10 @@ def cmd_day(argv):
         bucket = buckets.setdefault(key, {
             "minutes": 0.0, "bullets": [], "repos": set(), "skipped": 0,
             "branches": set(), "sessions": 0, "first": None, "last": None,
+            "off": False,
         })
+        if project and not project.get("report", True):
+            bucket["off"] = True
         bucket["minutes"] += minutes
         bucket["sessions"] += 1
         if session.get("branch"):
@@ -922,7 +956,13 @@ def cmd_day(argv):
               % (date.isoformat(), cfg["min_session_minutes"]))
         return 0
 
-    keys = sorted(buckets, key=lambda k: buckets[k]["minutes"], reverse=True)
+    # Personal (`report: false`) buckets are split out before rounding and
+    # normalization - exclusion is arithmetic, so it happens here, not in the
+    # agent's head. They are still rendered below so nothing vanishes silently.
+    keys = sorted((k for k in buckets if not buckets[k]["off"]),
+                  key=lambda k: buckets[k]["minutes"], reverse=True)
+    off_keys = sorted((k for k in buckets if buckets[k]["off"]),
+                      key=lambda k: buckets[k]["minutes"], reverse=True)
     actual = [buckets[k]["minutes"] for k in keys]
     actual_rounded = round_split(actual, cfg["round_minutes"])
 
@@ -964,28 +1004,33 @@ def cmd_day(argv):
                    % fmt_minutes(overlap_minutes))
     out.append("")
 
-    header = "  %-28s %-12s %10s" % ("PROJECT", "TICKET", "ACTUAL")
-    if normalized_rounded:
-        header += " %12s" % ("OF %gh" % cfg["target_hours"])
-    out.append(header)
-    for i, key in enumerate(keys):
-        project_name, ticket = key
-        row = "  %-28s %-12s %10s" % (project_name[:28], ticket or "-",
-                                      fmt_minutes(actual_rounded[i]))
+    if keys:
+        header = "  %-28s %-12s %10s" % ("PROJECT", "TICKET", "ACTUAL")
         if normalized_rounded:
-            row += " %12s" % fmt_minutes(normalized_rounded[i])
-        out.append(row)
-    total_row = "  %-28s %-12s %10s" % ("TOTAL", "", fmt_minutes(sum(actual_rounded)))
-    if normalized_rounded:
-        total_row += " %12s" % fmt_minutes(sum(normalized_rounded))
-    out.append("  " + "-" * (len(total_row) - 2))
-    out.append(total_row)
-    if normalize_note:
-        out.append("")
-        out.append(normalize_note)
+            header += " %12s" % ("OF %gh" % cfg["target_hours"])
+        out.append(header)
+        for i, key in enumerate(keys):
+            project_name, ticket = key
+            row = "  %-28s %-12s %10s" % (project_name[:28], ticket or "-",
+                                          fmt_minutes(actual_rounded[i]))
+            if normalized_rounded:
+                row += " %12s" % fmt_minutes(normalized_rounded[i])
+            out.append(row)
+        total_row = "  %-28s %-12s %10s" % ("TOTAL", "", fmt_minutes(sum(actual_rounded)))
+        if normalized_rounded:
+            total_row += " %12s" % fmt_minutes(sum(normalized_rounded))
+        out.append("  " + "-" * (len(total_row) - 2))
+        out.append(total_row)
+        if normalize_note:
+            out.append("")
+            out.append(normalize_note)
+    else:
+        out.append("  All of the day's activity is in `report: false` "
+                   "projects - there is nothing to put on the work log.")
 
-    out.append("")
-    out.append("DETAIL")
+    if keys:
+        out.append("")
+        out.append("DETAIL")
     email = git_email()
     for i, key in enumerate(keys):
         project_name, ticket = key
@@ -1014,6 +1059,20 @@ def cmd_day(argv):
                 out.append("    commits in %s:" % repo)
                 for line in commits:
                     out.append("      %s" % line)
+
+    if off_keys:
+        out.append("")
+        out.append("NOT REPORTED  (report: false in projects.md)")
+        for key in off_keys:
+            project_name, ticket = key
+            bucket = buckets[key]
+            out.append("  - %s%s  %s-%s  %s  (%d session%s)"
+                       % (project_name, "  [%s]" % ticket if ticket else "",
+                          fmt_clock(bucket["first"]), fmt_clock(bucket["last"]),
+                          fmt_minutes(bucket["minutes"]), bucket["sessions"],
+                          "" if bucket["sessions"] == 1 else "s"))
+        out.append("  Personal time, excluded from the table, the total and "
+                   "normalization. Do not put it in the work log.")
 
     if dropped:
         out.append("")

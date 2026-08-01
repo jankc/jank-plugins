@@ -9,6 +9,7 @@ Scenario for 2026-08-01, chosen to exercise every branch of the aggregation:
   s3  14:00-14:02  scratch           2 minutes, must be dropped
   s4  15:00-16:00  unmapped-thing    not in projects.md
   s5  23:40-00:20  client-web        crosses midnight
+  s6  20:00-21:00  own-stuff         report: false - captured, never reported
 
 Usage: python3 tests/make_fixture.py <target-alibi-home>
 """
@@ -26,6 +27,7 @@ SESSIONS = [
     ("s3", "/repos/scratch", "main", ""),
     ("s4", "/repos/unmapped-thing", "main", ""),
     ("s5", "/repos/client-web", "feature/ABC-124-auth", "ABC-124"),
+    ("s6", "/repos/own-stuff", "main", ""),
 ]
 
 RUNS = [
@@ -35,6 +37,7 @@ RUNS = [
     ("s3", "14:00", "14:02"),
     ("s4", "15:00", "16:00"),
     ("s5", "23:40", "23:59"),
+    ("s6", "20:00", "21:00"),
 ]
 
 NOTES = [
@@ -63,6 +66,10 @@ nudge: true
 - paths: /repos/internal-tools, /repos/scratch
 - report-as: Internal development
 - note: no ticket, report as internal
+
+## Own stuff
+- paths: /repos/own-stuff
+- report: false
 """
 
 

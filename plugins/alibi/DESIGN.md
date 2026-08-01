@@ -197,7 +197,14 @@ In `cmd_day`, in order. Each step exists for a reason.
    than silently baked in. v1 splits evenly; weighting by beat density is a
    plausible improvement, but even-split is explainable and that matters more.
 3. **Session → project.** Longest-prefix match of the repo root against
-   `paths`. An explicit `project` on a note always wins.
+   `paths`. An explicit `project` on a note always wins — including a
+   `report: false` one, which is how a personal session inside a work
+   directory gets rerouted off the log.
+3a. **Personal buckets are split out here.** Projects marked `report: false`
+   are excluded *before* rounding and normalization — exclusion changes the
+   arithmetic, so it lives in the script, not in the agent's judgement. The
+   excluded time is still rendered under `NOT REPORTED` so nothing vanishes
+   silently, and such sessions are never nudged for notes (`cmd_turn`).
 4. **Rounding uses largest-remainder**, not independent rounding. Rounding each
    bucket separately produces reports where three 15-minute lines claim to total
    50 minutes. The parts must sum to the whole or the user loses trust in the
@@ -301,9 +308,10 @@ ALIBI_HOME=/tmp/alibi-test python3 scripts/alibi.py day 2026-08-01
 
 The fixture covers two sessions overlapping by 90 minutes, a 40-minute gap
 inside a session, a 2-minute session that must be dropped, a repository absent
-from `projects.md`, and a session crossing midnight. Expected: 56m overlap split
-evenly, 4h27m active within a 14h58m span, line items summing to exactly 4h30m
-actual and exactly 8h normalized.
+from `projects.md`, a session crossing midnight, and a `report: false`
+personal project. Expected: 56m overlap split evenly, 5h30m active within a
+14h58m span, line items summing to exactly 4h30m actual and exactly 8h
+normalized, and the personal hour appearing only under `NOT REPORTED`.
 
 Fail-open paths worth re-checking after any change:
 

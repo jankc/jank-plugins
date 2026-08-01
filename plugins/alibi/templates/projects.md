@@ -26,6 +26,9 @@ nudge: true               # ask for a session note before finishing
 #   paths:      comma-separated directories (a repo root, or a parent of
 #               several); git worktrees resolve to their main checkout
 #   report-as:  label to use in the log, when it differs from the section name
+#   report:     false marks a personal project - time is captured but never
+#               nudged and never reported; /alibi-day shows it only as a
+#               NOT REPORTED line, excluded from totals and normalization
 #   note:       anything the agent should know when reporting this work
 
 ## Example client project
@@ -36,3 +39,7 @@ nudge: true               # ask for a session note before finishing
 - paths: ~/dev/internal
 - report-as: Internal development
 - note: no ticket, report as internal development
+
+## Own stuff
+- paths: ~/dev/personal
+- report: false
