@@ -1,13 +1,12 @@
 {
   "name": "alibi-dev",
-  "description": "Local development marketplace for lnd-alibi. DELETE THIS FILE before copying the plugin into ai-marketplace.",
+  "description": "Local development marketplace for alibi. DELETE THIS FILE before publishing the plugin to a real marketplace.",
   "owner": {
-    "name": "Jan Krapac",
-    "email": "jan.krapac@lundegaard.eu"
+    "name": "Jan Krapac"
   },
   "plugins": [
     {
-      "name": "lnd-alibi",
+      "name": "alibi",
       "source": "./",
       "description": "Passive work-log capture and daily reconciliation"
     }

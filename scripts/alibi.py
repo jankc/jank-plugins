@@ -13,7 +13,7 @@ Two layers:
 
 Everything is local. No network, no credentials. Standard library only.
 
-House rule, inherited from lnd-core: fail open. Every path exits 0 and stays
+House rule: fail open. Every path exits 0 and stays
 quiet on unexpected conditions, because a hook that errors on every turn is
 worse than a hook that does nothing.
 """

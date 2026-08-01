@@ -1,4 +1,4 @@
-# lnd-alibi
+# Alibi
 
 Work-log capture and daily reconciliation for Claude Code.
 
@@ -32,8 +32,12 @@ until you have seen it and said yes.
 
 ## Install
 
+From whatever marketplace hosts it (or straight from a checkout of this
+repository):
+
 ```
-/plugin install lnd-alibi@lundegaard-plugins
+/plugin marketplace add <marketplace-or-path>
+/plugin install alibi@<marketplace>
 ```
 
 Restart, and the first session will offer to set you up. It proposes a draft
@@ -145,6 +149,4 @@ ALIBI_HOME=/tmp/alibi-test python3 scripts/alibi.py day 2026-08-01
 The fixture covers overlapping parallel sessions, a meeting-sized gap, a
 too-short session, an unmapped repository and a session crossing midnight.
 
-Before publishing to `ai-marketplace`: delete `.claude-plugin/marketplace.json`
-(local development only), copy the folder to `plugins/lnd-alibi/`, add entries
-to **both** catalogs, and run the `marketplace-plugin-auditor` skill.
+The publishing checklist is at the end of [`DESIGN.md`](DESIGN.md).

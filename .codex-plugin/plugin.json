@@ -1,10 +1,9 @@
 {
-  "name": "lnd-alibi",
+  "name": "alibi",
   "version": "0.1.0",
   "description": "Passive work-log capture and daily reconciliation - turns Claude Code sessions into a timesheet-ready log of tickets and internal projects",
   "author": {
-    "name": "Jan Krapac",
-    "email": "jan.krapac@lundegaard.eu"
+    "name": "Jan Krapac"
   },
   "license": "UNLICENSED",
   "keywords": [
@@ -19,7 +18,7 @@
     "displayName": "Alibi",
     "shortDescription": "Work-log capture and daily reconciliation",
     "longDescription": "Alibi records which repo, branch and ticket you worked on and for how long, then reconciles a messy day of parallel sessions into a single timesheet-ready log entry per project. Fully local: no network, no credentials, nothing written into your repositories.",
-    "developerName": "Lundegaard",
+    "developerName": "Jan Krapac",
     "category": "Productivity",
     "capabilities": [
       "Passive capture of active working time per repository and branch",

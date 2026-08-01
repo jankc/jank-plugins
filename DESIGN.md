@@ -120,9 +120,8 @@ nudge is layered on top, guarded by a per-session marker so it fires at most
 once and cannot loop.
 
 **3. `SessionStart` silently never fires without a matcher.** It needs
-`"matcher": "startup|resume|clear|compact"`. This is documented the hard way in
-`ai-marketplace/docs/claude-code-plugin-hooks.md`; `lnd-liferay-upgrade` omits
-it and is probably broken as a result.
+`"matcher": "startup|resume|clear|compact"`. Learned the hard way; plugins in
+the wild omit it and are silently broken as a result.
 
 Other harness constraints that bit during development:
 
@@ -133,8 +132,8 @@ Other harness constraints that bit during development:
   `hookSpecificOutput` **without deduplication**, so emit exactly one form.
 - Hooks load **at startup only**. Config and hook edits need a restart, and the
   setup flow must say so.
-- `AskUserQuestion` allows at most **4 options** per question. `lnd-core` had to
-  split a question for this reason. Never route a project list through it.
+- `AskUserQuestion` allows at most **4 options** per question; questions with
+  more options must be split. Never route a project list through it.
 - `$ALIBI_SID` and `$ALIBI_SCRIPT` are exported at SessionStart via
   `$CLAUDE_ENV_FILE`, so later Bash calls in the session can find them.
 
@@ -329,7 +328,7 @@ End-to-end still requires an install and a restart:
 
 ```
 /plugin marketplace add /path/to/alibi
-/plugin install lnd-alibi@alibi-dev
+/plugin install alibi@alibi-dev
 ```
 
 Check `/hooks` lists all three, that a `session` record and one `beat` per turn
@@ -338,17 +337,23 @@ re-nudge.
 
 ---
 
-## Publishing to `ai-marketplace`
+## Publishing to a marketplace
 
-Per that repo's `NAMING-CONVENTIONS.md`:
+The plugin is deliberately company-unaware: nothing in it names an employer, a
+tracker, or a marketplace. Anything organization-specific — a name prefix, a
+category, a policy entry — belongs to the target marketplace and is applied at
+publish time, not baked in here.
 
 1. Delete `.claude-plugin/marketplace.json` — local development only.
-2. Copy the folder to `plugins/lnd-alibi/`.
-3. Add entries to **both** catalogs: `.claude-plugin/marketplace.json` (string
-   `source`) and `.agents/plugins/marketplace.json` (object `source`, plus
-   `policy` and `category: "Productivity"`).
-4. Add a `CODEOWNERS` line.
-5. Run the `marketplace-plugin-auditor` skill; it must report no ERRORs.
+2. Copy the folder into the marketplace's plugins directory. If its naming
+   conventions require a prefix, rename the folder *and* the `name` field in
+   both plugin manifests as part of the copy.
+3. Add catalog entries wherever the marketplace keeps them — some maintain
+   more than one catalog (e.g. one per client); the plugin must land in all of
+   them or updates silently miss users.
+4. Add an ownership entry (`CODEOWNERS` or equivalent) and run whatever audit
+   tooling the marketplace provides before merging.
 
-Version bumps must land in **both** manifests, or `/plugin marketplace update`
-is a no-op for existing users.
+Version bumps must land in **both** plugin manifests (`.claude-plugin/` and
+`.codex-plugin/`), or `/plugin marketplace update` is a no-op for existing
+users.
