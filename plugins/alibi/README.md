@@ -33,7 +33,7 @@ until you have seen it and said yes.
 ## Install
 
 ```
-/plugin marketplace add Jank/jank-plugins
+/plugin marketplace add jankc/jank-plugins
 /plugin install alibi@jank-plugins
 ```
 

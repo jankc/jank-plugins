@@ -1,6 +1,6 @@
 # jank-plugins
 
-Plugins for Claude Code and Codex by [Jank](https://github.com/Jank). Yes, the
+Plugins for Claude Code and Codex by [Jank](https://github.com/jankc). Yes, the
 name is a pun — the plugins do their best not to live up to it.
 
 Everything here is self-contained, local-first and company-unaware: no plugin
@@ -10,7 +10,7 @@ particular employer, issue tracker or workflow.
 ## Install
 
 ```
-/plugin marketplace add Jank/jank-plugins
+/plugin marketplace add jankc/jank-plugins
 /plugin install <plugin>@jank-plugins
 ```
 
