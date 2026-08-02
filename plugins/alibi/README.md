@@ -55,6 +55,7 @@ and it stays silent permanently; `/alibi-setup` is how you come back.
 | `/alibi-setup` | Set up or reconfigure projects and log destination |
 | `/alibi-note` | Record what this session worked on, right now |
 | `/alibi-day [date]` | Reconcile a day into the work log |
+| `/alibi-help [topic]` | Show the guide — commands, configuration, how time is measured, FAQ |
 
 Once per session, after real work, Claude will ask to record a note before
 finishing. Set `nudge: false` in your config to turn that off and rely on

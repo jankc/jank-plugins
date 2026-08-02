@@ -1,6 +1,6 @@
 ---
 name: alibi
-description: Record and reconcile work for time reporting. Use when logging what was worked on, when the Alibi Stop hook asks for a session note, when reconciling a day into a work log ("what did I work on", "log this", "reconcile yesterday", "alibi"), when setting Alibi up for the first time, or when a ticket is mentioned and it is unclear which project the current work should be reported under.
+description: Record and reconcile work for time reporting. Use when logging what was worked on, when the Alibi Stop hook asks for a session note, when reconciling a day into a work log ("what did I work on", "log this", "reconcile yesterday", "alibi"), when setting Alibi up for the first time, when a ticket is mentioned and it is unclear which project the current work should be reported under, or when the user asks how Alibi works or what one of its settings means.
 ---
 
 # Alibi — work-log capture and reconciliation
@@ -16,6 +16,14 @@ layers, and keeping them separate is the whole point:
 
 Everything is local. Never contact an issue tracker, never send anything
 anywhere.
+
+## Answering questions about Alibi
+
+`HELP.md`, next to this file, is the user-facing guide: quick start, command
+and configuration reference, how time is measured, privacy, FAQ. When the
+user asks what Alibi is, what a setting means, why something was or was not
+recorded, or how to change its behaviour, read it and answer from it — do not
+improvise from memory. `/alibi-help` renders it directly.
 
 ## Running the script
 
