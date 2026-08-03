@@ -48,6 +48,23 @@ and it stays silent permanently; `/alibi-setup` is how you come back.
 
 **Alibi records nothing at all until it is configured.**
 
+### Fewer permission prompts
+
+Everything Alibi touches lives in `~/.alibi`, outside any project directory,
+so Claude Code asks permission for every note and every reconcile. Setup
+offers to fix this for you; to do it yourself, add these to the
+`"permissions": { "allow": [...] }` array in `~/.claude/settings.json`:
+
+```json
+"Read(~/.alibi/**)",
+"Edit(~/.alibi/**)",
+"Write(~/.alibi/**)",
+"Bash(python3 \"$ALIBI_SCRIPT\" *)"
+```
+
+The Bash rule is safe: the script is local-only, writes nowhere but
+`~/.alibi`, and never touches the network or an issue tracker.
+
 ## Commands
 
 | Command | Purpose |

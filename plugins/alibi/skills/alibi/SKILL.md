@@ -233,6 +233,23 @@ A few quick commands, a few seconds total — not an exhaustive survey:
    through `AskUserQuestion`.
 4. Write `~/.alibi/projects.md`, then tell them capture starts next session —
    hooks only load at startup.
+5. **Offer to allowlist Alibi once.** Everything Alibi touches lives outside
+   the project directory, so without allow rules every note and every
+   reconcile re-prompts for permission. Offer to add these to the
+   `permissions.allow` array of `~/.claude/settings.json` — merge into the
+   existing array, never replace it:
+
+   ```
+   "Read(~/.alibi/**)",
+   "Edit(~/.alibi/**)",
+   "Write(~/.alibi/**)",
+   "Bash(python3 \"$ALIBI_SCRIPT\" *)"
+   ```
+
+   Say why the Bash rule is safe: the script is local-only, writes nowhere
+   but `~/.alibi`, and never touches the network or an issue tracker. If
+   they decline, drop it — the FAQ in `/alibi-help` covers it whenever the
+   prompts start to grate.
 
 If they decline or want to do it later, run
 `python3 "$ALIBI_SCRIPT" decline` and never raise it again. `/alibi-setup`

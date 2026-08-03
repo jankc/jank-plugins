@@ -1,6 +1,6 @@
 ---
 description: Set up or reconfigure Alibi — the projects you work on and where the log goes.
-allowed-tools: Bash(python3:*), Bash(git:*), Read, Write, AskUserQuestion
+allowed-tools: Bash(python3:*), Bash(git:*), Read, Write, Edit, AskUserQuestion
 ---
 
 Set up Alibi for this user, following the first-run procedure in the `alibi`
@@ -28,3 +28,8 @@ Use `AskUserQuestion` only for the log destination and `target_hours`.
 
 After writing the file, tell them capture begins in their next session, since
 hooks are only loaded at startup.
+
+Then offer to add Alibi's permission allow rules to `~/.claude/settings.json`,
+per the first-run procedure in the skill — without them, every note and
+reconcile prompts for permission, because everything Alibi touches lives
+outside the project directory.

@@ -134,6 +134,22 @@ Alibi never parses tickets; Claude reads them off branch names and commit
 subjects. Give the project a `ticket:` hint describing your convention, or
 just say the right ticket when reconciling.
 
+**Claude asks permission every time Alibi records or reconciles.**
+Everything Alibi touches lives in `~/.alibi`, outside your project, so each
+session prompts anew. Add these to the `"permissions": { "allow": [...] }`
+array in `~/.claude/settings.json` (merge with what is already there):
+
+```json
+"Read(~/.alibi/**)",
+"Edit(~/.alibi/**)",
+"Write(~/.alibi/**)",
+"Bash(python3 \"$ALIBI_SCRIPT\" *)"
+```
+
+The Bash rule is safe to allow: the script is local-only, writes nowhere but
+`~/.alibi`, and never touches the network or an issue tracker. Takes effect
+in new sessions.
+
 **I declined setup and changed my mind.**
 `/alibi-setup` — it removes the decline marker.
 
