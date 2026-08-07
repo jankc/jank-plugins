@@ -33,7 +33,14 @@ Use `$ALIBI_SCRIPT` (exported at session start):
 python3 "$ALIBI_SCRIPT" <subcommand>
 ```
 
-If `$ALIBI_SCRIPT` is empty, the slash commands pass the path explicitly.
+If it is empty, use the absolute path given on the `Script path:` line of the
+`<alibi>` session-start context instead — the examples below are written with
+`$ALIBI_SCRIPT`, but substitute that path anywhere it is unset. Exporting the
+variable needs an env-file mechanism the host may not have (Codex has hooks
+and the same context shape, but no env file), so the context line is the one
+channel that always carries the path. The slash commands pass it explicitly
+and need neither.
+
 Subcommands: `note`, `day`, `status`, `config`, `mark-rolled`, `decline`.
 
 ## Working out which project or ticket
@@ -147,10 +154,12 @@ Then:
    is personal time — it may be mentioned in conversation, but it never goes
    into the entry.
 3. **Draft the entry** in the format below and show it before writing.
-4. **Write it** to the log path named at the bottom of the report. Append; if
-   a `heading` is configured, append under it; create the file with a
-   `# YYYY-MM` title if it does not exist. **Never rewrite an existing day** —
-   if the date is already present, show the user the conflict and ask.
+4. **Write it** to the log path named at the bottom of the report, **newest
+   first**: insert the entry above the topmost `## YYYY-MM-DD` heading already
+   in the file, directly under the `# YYYY-MM` title — or immediately under the
+   configured `heading` if there is one. Create the file with a `# YYYY-MM`
+   title if it does not exist. **Never rewrite an existing day** — if the date
+   is already present, show the user the conflict and ask.
 5. **Mark it done**: `python3 "$ALIBI_SCRIPT" mark-rolled 2026-08-01`
 
 Only run `mark-rolled` after the entry is actually written and the user has
@@ -163,14 +172,28 @@ confirmed it. It is what stops the day being nudged again.
 
 - **09:00–12:00** (2h) · `ABC-123` · client-web
   - Implemented invoice PDF export
-  - Fixed date parsing in summary view
-  - 3 commits, 7 files
+  - Fixed date parsing in the summary view
 - **09:45–11:15** (1h15m) · Internal development
   - Added the Alibi plugin scaffold and catalog entries
 ```
 
-Times come from the report's DETAIL section. The third bullet is optional
-volume context — include it only when it adds something.
+Times come from the report's DETAIL section. Order projects by time spent,
+longest first.
+
+**Keep it short.** This log is skimmed months later by someone reconstructing a
+timesheet, not read as a changelog. The session notes are the detailed record;
+the entry is the summary of them.
+
+- At most three bullets per project, one line each. When the notes give you
+  more, merge related ones — do not transcribe the list.
+- No parenthetical file lists, no filenames, module or endpoint paths, no test
+  or command names. "Fixed the bulk transfer contract" — not "Adopted the
+  corrected contract (new /pripravPodani/podaniRegZec/hromadny-prevod path,
+  lowercase envelope) and fixed pripravPodaniPreZec.yaml casing".
+- No separate volume bullet. If a commit or MR count is worth keeping at all,
+  tack it onto the last bullet: `...; 3 MR do develop`.
+- Write each project in the language its session notes use — a project recorded
+  in Czech stays Czech, in the same log.
 
 ## First-run setup
 
@@ -263,7 +286,7 @@ is how they come back. A colleague nagged every session uninstalls the plugin.
 |---|---|---|
 | `log` | `~/.alibi/{yyyy}-{mm}.md` | Output path; `{yyyy}` `{mm}` `{dd}` are substituted |
 | `ticket` (per project) | *(none)* | Free-text hint describing this project's ticket convention |
-| `heading` | *(none)* | Append under this heading if present in the file |
+| `heading` | *(none)* | Insert under this heading if present in the file |
 | `idle_gap_minutes` | 20 | A gap longer than this ends an activity block |
 | `min_session_minutes` | 5 | Shorter sessions never nudge and never report |
 | `min_turns` | 3 | Minimum turns before a session counts |

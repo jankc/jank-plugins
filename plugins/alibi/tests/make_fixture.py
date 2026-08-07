@@ -10,6 +10,8 @@ Scenario for 2026-08-01, chosen to exercise every branch of the aggregation:
   s4  15:00-16:00  unmapped-thing    not in projects.md
   s5  23:40-00:20  client-web        crosses midnight
   s6  20:00-21:00  own-stuff         report: false - captured, never reported
+  s7  16:30-17:00  scratchpad        temp dir, resolved back to client-web
+                                     through the slug in its path
 
 Usage: python3 tests/make_fixture.py <target-alibi-home>
 """
@@ -28,6 +30,11 @@ SESSIONS = [
     ("s4", "/repos/unmapped-thing", "main", ""),
     ("s5", "/repos/client-web", "feature/ABC-124-auth", "ABC-124"),
     ("s6", "/repos/own-stuff", "main", ""),
+    # Ends up inside a throwaway git repo in the scratchpad, so `repo` points
+    # at the fixture rather than the real project. Only the slug component
+    # `-repos-client-web` ties it back to /repos/client-web.
+    ("s7", "/private/tmp/claude-501/-repos-client-web/abc-123/scratchpad/fx",
+     "main", ""),
 ]
 
 RUNS = [
@@ -38,6 +45,7 @@ RUNS = [
     ("s4", "15:00", "16:00"),
     ("s5", "23:40", "23:59"),
     ("s6", "20:00", "21:00"),
+    ("s7", "16:30", "17:00"),
 ]
 
 NOTES = [

@@ -41,8 +41,8 @@ are projects. Edits take effect next session.
 
 | Setting | Default | Meaning |
 |---|---|---|
-| `log` | `~/.alibi/{yyyy}-{mm}.md` | Where entries go; `{yyyy}` `{mm}` `{dd}` are substituted |
-| `heading` | *(none)* | Append under this heading — for Obsidian daily notes |
+| `log` | `~/.alibi/{yyyy}-{mm}.md` | Where entries go, newest day on top; `{yyyy}` `{mm}` `{dd}` are substituted |
+| `heading` | *(none)* | Insert under this heading — for Obsidian daily notes |
 | `idle_gap_minutes` | 20 | A longer silence ends an activity block (meeting, lunch) |
 | `min_session_minutes` | 5 | Shorter sessions never nudge and never report |
 | `min_turns` | 3 | Minimum turns before a session counts |

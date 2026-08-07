@@ -82,11 +82,18 @@ def now():
 # journal io
 # --------------------------------------------------------------------------
 
-def append_record(record):
-    """Append one JSON record. Returns True on success, False on any failure."""
+def append_record(record, date=None):
+    """Append one JSON record. Returns True on success, False on any failure.
+
+    A record is filed under the day it is *about*. For live capture that is the
+    day it happened, so `at` decides; a rollup marker is written today about an
+    earlier day, so it passes `date` explicitly. Filing that one by `at` drops
+    it into today's journal, where nothing that reads the reconciled day ever
+    looks -- the day stays pending however often it is marked.
+    """
     try:
         at = parse_ts(record.get("at")) or now()
-        path = journal_path(at.date())
+        path = journal_path(date or at.date())
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -249,6 +256,21 @@ def load_config_and_projects():
     return cfg, projects
 
 
+def slugify(text):
+    """Claude Code's directory-slug encoding, as used for the per-session
+    scratchpad and ~/.claude/projects: the originating directory with its
+    separators folded to dashes.
+
+    Deliberately more aggressive than the real rule (which at least folds both
+    `/` and `.`, so `~/x/.worktrees` becomes `-x--worktrees`). The encoding is
+    undocumented and lossy, so we never try to reverse it -- we only ever
+    slugify a known path and compare. Over-folding costs at most a theoretical
+    collision between two configured projects; under-folding would silently
+    fail to match any project whose path contains a dot.
+    """
+    return "".join(c if (c.isascii() and c.isalnum()) else "-" for c in text)
+
+
 def match_project(path, projects):
     """Longest matching configured path wins. Returns None when unmapped."""
     if not path:
@@ -261,6 +283,22 @@ def match_project(path, projects):
             if path == base or path.startswith(base.rstrip(os.sep) + os.sep):
                 if len(base) > best_len:
                     best, best_len = project, len(base)
+    if best:
+        return best
+
+    # Nothing matched directly. A session run from a scratchpad or worktree
+    # under a temp directory carries its originating project in a slug
+    # component -- /private/tmp/.../-Users-me-dev-thing/<uuid>/scratchpad/...
+    # -- so compare in slug space, mirroring the containment test above.
+    for segment in path.split(os.sep):
+        if not segment.startswith("-"):
+            continue
+        for project in projects:
+            for base in project["paths"]:
+                slug = slugify(base.rstrip(os.sep))
+                if segment == slug or segment.startswith(slug + "-"):
+                    if len(base) > best_len:
+                        best, best_len = project, len(base)
     return best
 
 
@@ -518,8 +556,8 @@ def first_run_context():
         "correct.",
         "",
         "If the user declines or wants to do it later, run "
-        "`python3 \"$ALIBI_SCRIPT\" decline` and never bring it up again. "
-        "They can run /alibi-setup whenever they want.",
+        "`python3 \"%s\" decline` and never bring it up again. "
+        "They can run /alibi-setup whenever they want." % os.path.abspath(__file__),
         "</alibi-first-run>",
     ])
 
@@ -543,7 +581,11 @@ def unreconciled_days(cfg, limit=7):
         if date >= today:
             continue
         records = read_journal(date)
-        if any(r.get("t") == "rollup" for r in records):
+        # Match the marker's own date, as cmd_day does. Accepting any rollup
+        # record in the file made a marker misfiled from another day clear this
+        # one too, hiding a day that was never reconciled.
+        if any(r.get("t") == "rollup" and r.get("date") == date.isoformat()
+               for r in records):
             continue
         if sum(1 for r in records if r.get("t") == "beat") < cfg["min_turns"]:
             continue
@@ -580,9 +622,15 @@ def cmd_session_start(argv):
                       "nudged": False, "noted": False, "cwd": cwd,
                       "repo": repo, "branch": branch})
 
+    # The path is stated here as well as exported, because $ALIBI_SCRIPT only
+    # reaches the agent's shell on hosts with an env-file mechanism. Codex has
+    # hooks and the same context shape but no env file, so the context is the
+    # one channel that carries the path everywhere.
     parts = ["<alibi>",
              "Alibi is tracking this session for work reporting. Use the "
              "`alibi` skill when logging or reconciling work.",
+             "Script path (use if $ALIBI_SCRIPT is unset): %s"
+             % os.path.abspath(__file__),
              ""]
     if project:
         parts.append("Current directory maps to project: %s" % project["name"])
@@ -808,8 +856,11 @@ def cmd_status(argv):
 
 def cmd_mark_rolled(argv):
     date = parse_date(argv[0] if argv else "")
-    append_record({"t": "rollup", "at": now().isoformat(),
-                   "date": date.isoformat()})
+    if not append_record({"t": "rollup", "at": now().isoformat(),
+                          "date": date.isoformat()}, date=date):
+        print("could not write the rollup marker to %s -- %s is still pending"
+              % (journal_path(date), date.isoformat()))
+        return 1
     print("marked %s as reconciled" % date.isoformat())
     return 0
 
@@ -1078,8 +1129,19 @@ def cmd_day(argv):
         out.append("")
         out.append("Dropped, under the %d-minute threshold:"
                    % cfg["min_session_minutes"])
+        # Rolled up per directory: a test harness or a burst of short-lived
+        # sessions in one repo would otherwise print the same path dozens of
+        # times and bury the rest of the report.
+        rollup = {}
         for _, cwd, minutes in dropped:
-            out.append("  - %s (%s)" % (cwd or "unknown", fmt_minutes(minutes)))
+            entry = rollup.setdefault(cwd or "unknown", [0, 0.0])
+            entry[0] += 1
+            entry[1] += minutes
+        for cwd in sorted(rollup, key=lambda key: (-rollup[key][1], key)):
+            count, minutes = rollup[cwd]
+            out.append("  - %s (%s%s)"
+                       % (cwd, fmt_minutes(minutes),
+                          "" if count == 1 else ", %d sessions" % count))
 
     if unmapped:
         out.append("")
