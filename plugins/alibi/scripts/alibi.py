@@ -414,8 +414,15 @@ def export_env(name, value):
 def blocks_from_beats(beats, idle_gap_minutes, lead_in_minutes):
     """Collapse beat timestamps into active blocks.
 
+    `beats` is a list of (timestamp, kind) pairs. "start" is written when a
+    prompt is submitted, "stop" when the response it produced finishes. Beats
+    recorded before start beats existed carry no kind and count as stops, so
+    older journals collapse exactly as they did.
+
     A gap longer than idle_gap ends a block - that gap is the meeting, the
-    lunch, the school run. Each block is extended backwards by lead_in to
+    lunch, the school run. The one gap that is never idle is the one between
+    a start and the stop that closes it: that is a response being produced,
+    however long it ran. Each block is extended backwards by lead_in to
     account for the time spent writing the prompt before the turn ran.
     """
     if not beats:
@@ -424,13 +431,16 @@ def blocks_from_beats(beats, idle_gap_minutes, lead_in_minutes):
     gap = timedelta(minutes=idle_gap_minutes)
     lead = timedelta(minutes=lead_in_minutes)
     blocks = []
-    run = [beats[0]]
-    for ts in beats[1:]:
-        if ts - run[-1] > gap:
+    run = [beats[0][0]]
+    prev_kind = beats[0][1]
+    for ts, kind in beats[1:]:
+        inside_turn = prev_kind == "start" and kind != "start"
+        if ts - run[-1] > gap and not inside_turn:
             blocks.append((run[0] - lead, run[-1]))
             run = [ts]
         else:
             run.append(ts)
+        prev_kind = kind
     blocks.append((run[0] - lead, run[-1]))
 
     # Lead-in can push a block back into its predecessor; keep them disjoint.
@@ -587,7 +597,9 @@ def unreconciled_days(cfg, limit=7):
         if any(r.get("t") == "rollup" and r.get("date") == date.isoformat()
                for r in records):
             continue
-        if sum(1 for r in records if r.get("t") == "beat") < cfg["min_turns"]:
+        if sum(1 for r in records
+               if r.get("t") == "beat"
+               and r.get("k") != "start") < cfg["min_turns"]:
             continue
         out.append(date.isoformat())
         if len(out) >= limit:
@@ -689,6 +701,29 @@ def cmd_session_start(argv):
 
 
 # --------------------------------------------------------------------------
+# subcommand: prompt
+# --------------------------------------------------------------------------
+
+def cmd_prompt(argv):
+    """UserPromptSubmit: record when a turn began.
+
+    Stop fires once per response, not once per exchange, so a prompt that
+    drives a forty-minute tool loop leaves a single beat at the end and
+    measures as zero elapsed time. This is the other edge of that span.
+
+    Prints nothing: stdout from a UserPromptSubmit hook is injected into the
+    session as context.
+    """
+    if not os.path.exists(projects_path()):
+        return 0
+    data = read_hook_input()
+    sid = data.get("session_id") or os.environ.get("ALIBI_SID") or ""
+    append_record({"t": "beat", "at": now().isoformat(), "sid": sid,
+                   "k": "start"})
+    return 0
+
+
+# --------------------------------------------------------------------------
 # subcommand: turn
 # --------------------------------------------------------------------------
 
@@ -699,7 +734,8 @@ def cmd_turn(argv):
     data = read_hook_input()
     sid = data.get("session_id") or os.environ.get("ALIBI_SID") or ""
     stamp = now()
-    append_record({"t": "beat", "at": stamp.isoformat(), "sid": sid})
+    append_record({"t": "beat", "at": stamp.isoformat(), "sid": sid,
+                   "k": "stop"})
 
     cfg, projects = load_config_and_projects()
     state = read_state(sid)
@@ -933,7 +969,8 @@ def cmd_day(argv):
         if kind == "session":
             sessions[sid] = record
         elif kind == "beat" and stamp and day_start <= stamp < day_end:
-            beats.setdefault(sid, []).append(stamp)
+            beats.setdefault(sid, []).append(
+                (stamp, record.get("k") or "stop"))
         elif kind == "note" and stamp and day_start <= stamp < day_end:
             notes.setdefault(sid, []).append(record)
         elif kind == "rollup" and record.get("date") == date.isoformat():
@@ -1208,6 +1245,7 @@ def cmd_day(argv):
 COMMANDS = {
     "session-start": cmd_session_start,
     "turn": cmd_turn,
+    "prompt": cmd_prompt,
     "session-end": cmd_session_end,
     "note": cmd_note,
     "decline": cmd_decline,
@@ -1217,7 +1255,7 @@ COMMANDS = {
     "day": cmd_day,
 }
 
-HOOK_COMMANDS = ("session-start", "turn", "session-end")
+HOOK_COMMANDS = ("session-start", "prompt", "turn", "session-end")
 
 
 def main(argv):
