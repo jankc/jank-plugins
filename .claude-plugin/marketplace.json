@@ -9,6 +9,11 @@
       "name": "alibi",
       "source": "./plugins/alibi",
       "description": "Passive work-log capture and daily reconciliation — turns coding sessions into a timesheet-ready log"
+    },
+    {
+      "name": "workbench",
+      "source": "./plugins/workbench",
+      "description": "Personal coding-workflow skills — starting with worktree-ready, an is-this-branch-done audit before you delete a worktree"
     }
   ]
 }

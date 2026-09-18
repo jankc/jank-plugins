@@ -1,0 +1,16 @@
+{
+  "name": "workbench",
+  "version": "0.1.0",
+  "description": "Personal coding-workflow skills - worktree lifecycle checks and the chores around shipping a branch",
+  "author": {
+    "name": "Jan Krapac"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "worktree",
+    "git",
+    "workflow",
+    "cleanup",
+    "openspec"
+  ]
+}
