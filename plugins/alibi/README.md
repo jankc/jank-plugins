@@ -58,7 +58,6 @@ offers to fix this for you; to do it yourself, add these to the
 ```json
 "Read(~/.alibi/**)",
 "Edit(~/.alibi/**)",
-"Write(~/.alibi/**)",
 "Bash(python3 \"$ALIBI_SCRIPT\" *)"
 ```
 

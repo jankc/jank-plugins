@@ -142,7 +142,6 @@ array in `~/.claude/settings.json` (merge with what is already there):
 ```json
 "Read(~/.alibi/**)",
 "Edit(~/.alibi/**)",
-"Write(~/.alibi/**)",
 "Bash(python3 \"$ALIBI_SCRIPT\" *)"
 ```
 

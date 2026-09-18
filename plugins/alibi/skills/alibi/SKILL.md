@@ -265,7 +265,6 @@ A few quick commands, a few seconds total — not an exhaustive survey:
    ```
    "Read(~/.alibi/**)",
    "Edit(~/.alibi/**)",
-   "Write(~/.alibi/**)",
    "Bash(python3 \"$ALIBI_SCRIPT\" *)"
    ```
 
