@@ -175,6 +175,15 @@ A session started before midnight has its `session` record in the *previous*
 day's file, so `day` always loads `DATE-1` and `DATE` and filters beats by
 timestamp.
 
+Sessions can also stay open for days (a terminal left running), and
+SessionStart does not fire again. So `turn` writes a fresh `session` record on
+the first beat of each calendar day (`session_day` in state), copying
+cwd/repo/branch from state, or from the hook input's `cwd` when the state file
+is gone. Each day's journal then names every session that beat in it. For
+journals written before that, `day` walks back up to 30 days for a session
+record, but only for sids still missing one. Per-session state is not a
+substitute: it is deleted on SessionEnd and pruned after 7 days.
+
 ### `projects.md` is deliberately dual-audience
 
 Frontmatter and `paths:` are parsed mechanically; `note:` and free prose are
@@ -281,6 +290,13 @@ worktrees heavily.
 
 **Ticket regex false positives.** See above — deleted rather than patched.
 
+**Multi-day sessions in "unknown".** A session kept open across days had its
+only `session` record on its start day. Two days later `day` could not see it,
+so the session had no cwd and its time went to an `unknown` bucket. It also
+printed an empty `PROPOSED PROJECT ADDITIONS` header. Fixed by re-anchoring
+each day in `turn` plus the bounded backward scan in `day` (see Journal
+records).
+
 ---
 
 ## Deliberately not done
@@ -308,10 +324,12 @@ ALIBI_HOME=/tmp/alibi-test python3 scripts/alibi.py day 2026-08-01
 
 The fixture covers two sessions overlapping by 90 minutes, a 40-minute gap
 inside a session, a 2-minute session that must be dropped, a repository absent
-from `projects.md`, a session crossing midnight, and a `report: false`
-personal project. Expected: 56m overlap split evenly, 5h30m active within a
-14h58m span, line items summing to exactly 4h30m actual and exactly 8h
-normalized, and the personal hour appearing only under `NOT REPORTED`.
+from `projects.md`, a session crossing midnight, a `report: false`
+personal project, a scratchpad session resolved through its path slug, and a
+personal session whose only `session` record is two days earlier. Expected:
+56m overlap split evenly, 6h36m active within a 14h58m span, line items
+summing to exactly 5h actual and exactly 8h normalized, no `unknown` row, and
+`Own stuff` (2 sessions, 1h36m) appearing only under `NOT REPORTED`.
 
 Fail-open paths worth re-checking after any change:
 
@@ -331,6 +349,16 @@ The inverse matters just as much — fail-open swallows real bugs (see
 ```bash
 cd /some/git/repo && echo '{"session_id":"t","cwd":"'$PWD'"}' \
   | ALIBI_HOME=/tmp/alibi-test python3 scripts/alibi.py session-start
+```
+
+Likewise `turn` with no state file for the sid must still append a `session`
+record (cwd, repo, branch) to today's journal, and a second `turn` that day
+must not append another:
+
+```bash
+cd /some/git/repo && echo '{"session_id":"x","cwd":"'$PWD'"}' \
+  | ALIBI_HOME=/tmp/alibi-test python3 scripts/alibi.py turn
+grep '"t": "session".*"sid": "x"' /tmp/alibi-test/journal/$(date +%F).jsonl
 ```
 
 End-to-end still requires an install and a restart:

@@ -620,7 +620,8 @@ def cmd_session_start(argv):
                    "project": project["name"] if project else ""})
     write_state(sid, {"sid": sid, "started": stamp.isoformat(), "turns": 0,
                       "nudged": False, "noted": False, "cwd": cwd,
-                      "repo": repo, "branch": branch})
+                      "repo": repo, "branch": branch,
+                      "session_day": stamp.date().isoformat()})
 
     # The path is stated here as well as exported, because $ALIBI_SCRIPT only
     # reaches the agent's shell on hosts with an env-file mechanism. Codex has
@@ -706,6 +707,21 @@ def cmd_turn(argv):
     state["turns"] = int(state.get("turns") or 0) + 1
     if not state.get("started"):
         state["started"] = stamp.isoformat()
+    # Re-anchor the session in each day's journal. A terminal kept open for
+    # days never fires SessionStart again, and `day` only reads DATE-1/DATE,
+    # so without this its beats there have no cwd and land in "unknown".
+    if state.get("session_day") != stamp.date().isoformat():
+        if not state.get("cwd"):
+            cwd = data.get("cwd") or ""
+            repo, branch = repo_info(cwd) if cwd else ("", "")
+            state.update(cwd=cwd, repo=repo, branch=branch)
+        project = match_project(state.get("repo") or state.get("cwd"), projects)
+        append_record({"t": "session", "at": stamp.isoformat(), "sid": sid,
+                       "cwd": state.get("cwd") or "",
+                       "repo": state.get("repo") or "",
+                       "branch": state.get("branch") or "",
+                       "project": project["name"] if project else ""})
+        state["session_day"] = stamp.date().isoformat()
     write_state(sid, state)
 
     if not cfg["nudge"] or state.get("nudged") or state.get("noted"):
@@ -923,6 +939,18 @@ def cmd_day(argv):
         elif kind == "rollup" and record.get("date") == date.isoformat():
             rolled = True
 
+    # Journals written before the per-day re-anchor in `turn` hold a long-lived
+    # session's record only on its start day. Walk back for those, newest
+    # first, and only when something is actually missing.
+    missing = set(beats) - set(sessions)
+    back = date - timedelta(days=2)
+    while missing and back >= date - timedelta(days=30):
+        for record in read_journal(back):
+            if record.get("t") == "session" and record.get("sid") in missing:
+                sessions[record["sid"]] = record
+        missing -= set(sessions)
+        back -= timedelta(days=1)
+
     blocks_by_sid = {}
     for sid, stamps in beats.items():
         blocks = clamp_blocks(
@@ -975,7 +1003,8 @@ def cmd_day(argv):
                 project_name = project.get("report_as") or project["name"]
             else:
                 project_name = os.path.basename(cwd) or "unknown"
-                unmapped.add(cwd or "unknown")
+                if cwd:
+                    unmapped.add(cwd)
 
         key = (project_name, ticket)
         bucket = buckets.setdefault(key, {
@@ -1151,8 +1180,6 @@ def cmd_day(argv):
                    "to ask - show each draft, let the user rename or reject "
                    "it, then append the accepted ones to projects.md.")
         for path in sorted(unmapped):
-            if not path or path == "unknown":
-                continue
             name = os.path.basename(path).replace("-", " ").replace("_", " ")
             branches = git(["for-each-ref", "--sort=-committerdate",
                             "refs/heads", "--format=%(refname:short)",

@@ -12,6 +12,8 @@ Scenario for 2026-08-01, chosen to exercise every branch of the aggregation:
   s6  20:00-21:00  own-stuff         report: false - captured, never reported
   s7  16:30-17:00  scratchpad        temp dir, resolved back to client-web
                                      through the slug in its path
+  s8  18:00-18:30  own-stuff         session record two days earlier only (a
+                                     terminal left open), must not be "unknown"
 
 Usage: python3 tests/make_fixture.py <target-alibi-home>
 """
@@ -35,7 +37,12 @@ SESSIONS = [
     # `-repos-client-web` ties it back to /repos/client-web.
     ("s7", "/private/tmp/claude-501/-repos-client-web/abc-123/scratchpad/fx",
      "main", ""),
+    ("s8", "/repos/own-stuff", "main", ""),
 ]
+
+# Started two days before DATE and never restarted: its only session record
+# is in that day's file, outside the DATE-1/DATE window `day` reads first.
+STALE = {"s8": "2026-07-30"}
 
 RUNS = [
     ("s1", "09:00", "10:30"),
@@ -46,6 +53,7 @@ RUNS = [
     ("s5", "23:40", "23:59"),
     ("s6", "20:00", "21:00"),
     ("s7", "16:30", "17:00"),
+    ("s8", "18:00", "18:30"),
 ]
 
 NOTES = [
@@ -94,11 +102,13 @@ def main():
         fh.write(PROJECTS_MD.format(home=home))
 
     records = []
+    stale = []
     for sid, cwd, branch, ticket in SESSIONS:
         first = min(start for s, start, _ in RUNS if s == sid)
-        records.append({"t": "session", "at": at(first).isoformat(), "sid": sid,
-                        "cwd": cwd, "repo": cwd, "branch": branch,
-                        "ticket": ticket, "project": ""})
+        record = {"t": "session", "at": at(first, STALE.get(sid, DATE)).isoformat(),
+                  "sid": sid, "cwd": cwd, "repo": cwd, "branch": branch,
+                  "ticket": ticket, "project": ""}
+        (stale if sid in STALE else records).append(record)
 
     # One beat every 5 minutes across each run.
     for sid, start, end in RUNS:
@@ -118,6 +128,11 @@ def main():
     path = os.path.join(home, "journal", "%s.jsonl" % DATE)
     with open(path, "w") as fh:
         for record in records:
+            fh.write(json.dumps(record) + "\n")
+
+    for record in stale:
+        day = record["at"][:10]
+        with open(os.path.join(home, "journal", "%s.jsonl" % day), "w") as fh:
             fh.write(json.dumps(record) + "\n")
 
     # s5 spills past midnight into the next day's file.
