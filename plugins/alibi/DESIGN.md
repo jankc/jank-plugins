@@ -113,11 +113,19 @@ no agent to write a summary. So an entry with real content *must* come from a
 `Stop` hook that blocks once and asks. This is why the nudge exists — it is
 mechanism, not preference.
 
-**2. `Stop` fires on every assistant turn**, not once at session end. That makes
-it a free heartbeat, which is what gives *active* time instead of "the terminal
-was open 09:00–18:00", and what makes parallel sessions separable at all. The
-nudge is layered on top, guarded by a per-session marker so it fires at most
-once and cannot loop.
+**2. `Stop` fires on every assistant *response***, not once at session end.
+That makes it a free heartbeat, which is what gives *active* time instead of
+"the terminal was open 09:00–18:00", and what makes parallel sessions separable
+at all. The nudge is layered on top, guarded by a per-session marker so it
+fires at most once and cannot loop.
+
+A response is not an exchange. One prompt driving a forty-minute tool loop
+fires `Stop` **once**, at the end: the heartbeat marks when work finished and
+never when it began, so on its own that run measures as zero elapsed time.
+`UserPromptSubmit` supplies the missing edge - it writes a `start` beat, `Stop`
+writes a `stop` beat, and the span between them is a response being produced
+(step 1 of the algorithm). Agentic runs were badly under-counted before 0.3.4,
+which is exactly the work least likely to be remembered at the end of a day.
 
 **3. `SessionStart` silently never fires without a matcher.** It needs
 `"matcher": "startup|resume|clear|compact"`. Learned the hard way; plugins in
@@ -160,7 +168,9 @@ directory is easier to explain to a colleague than two hidden ones.
 
 ```jsonc
 {"t":"session","at":"…","sid":"…","cwd":"…","repo":"…","branch":"…","project":"…"}
-{"t":"beat","at":"…","sid":"…"}          // one per assistant turn
+{"t":"beat","at":"…","sid":"…","k":"start"} // prompt submitted
+{"t":"beat","at":"…","sid":"…","k":"stop"}  // its response finished
+                                         // no "k": pre-0.3.4, read as stop
 {"t":"note","at":"…","sid":"…","ticket":"…","project":"…","bullets":["…"]}
 {"t":"note","at":"…","sid":"…","skip":true}   // nothing worth reporting
 {"t":"end","at":"…","sid":"…"}
@@ -196,7 +206,9 @@ read by the agent. One file, human-editable, no separate config format.
 In `cmd_day`, in order. Each step exists for a reason.
 
 1. **Beats → activity blocks.** Consecutive beats form a block; a gap longer
-   than `idle_gap_minutes` (20) ends it. Each block is extended backwards by
+   than `idle_gap_minutes` (20) ends it - except between a `start` and the
+   `stop` that closes it, which is a response being produced however long it
+   took, not the user being away. Each block is extended backwards by
    `lead_in_minutes` (3) to account for time spent writing the prompt before
    the turn ran. Lead-in can push a block into its predecessor, so blocks are
    clamped to stay disjoint.
@@ -368,7 +380,8 @@ End-to-end still requires an install and a restart:
 /plugin install alibi@jank-plugins
 ```
 
-Check `/hooks` lists all three, that a `session` record and one `beat` per turn
+Run `python3 tests/test_beats.py` for the block accounting.
+Check `/hooks` lists all four, that a `session` record and `start`/`stop` beats
 appear, that the nudge fires exactly once, and that a second Stop does not
 re-nudge.
 

@@ -81,10 +81,12 @@ session off the log.
 
 ## How time is measured
 
-- Every assistant turn leaves a timestamp. Consecutive timestamps form an
-  activity block; a gap over `idle_gap_minutes` ends it — that gap is your
-  meeting or lunch, and it is not counted. So you get *active* time, not
-  "the terminal was open 09:00–18:00".
+- Submitting a prompt leaves a timestamp, and so does the end of the response
+  it produces. Consecutive timestamps form an activity block; a gap over
+  `idle_gap_minutes` ends it — that gap is your meeting or lunch, and it is
+  not counted. So you get *active* time, not "the terminal was open
+  09:00–18:00". The stretch between your prompt and the end of its response
+  always counts, however long Claude worked on it.
 - Each block is extended `lead_in_minutes` backwards, crediting the time you
   spent writing the prompt.
 - When two sessions run at once, each minute is split evenly between them —

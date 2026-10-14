@@ -110,7 +110,9 @@ def main():
                   "ticket": ticket, "project": ""}
         (stale if sid in STALE else records).append(record)
 
-    # One beat every 5 minutes across each run.
+    # One beat every 5 minutes across each run. Deliberately untagged:
+    # that is what pre-0.3.4 journals look like, and they must still
+    # aggregate the same way.
     for sid, start, end in RUNS:
         cursor, stop = at(start), at(end)
         while cursor <= stop:
