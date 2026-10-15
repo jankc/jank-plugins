@@ -70,7 +70,7 @@ The Bash rule is safe: the script is local-only, writes nowhere but
 |---|---|
 | `/alibi-setup` | Set up or reconfigure projects and log destination |
 | `/alibi-note` | Record what this session worked on, right now |
-| `/alibi-day [date]` | Reconcile a day into the work log |
+| `/alibi-day [date]` | Reconcile every pending day before today, or one date |
 | `/alibi-help [topic]` | Show the guide — commands, configuration, how time is measured, FAQ |
 
 Once per session, after real work, Claude will ask to record a note before

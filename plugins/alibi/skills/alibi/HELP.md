@@ -19,8 +19,8 @@ It has two layers, and the split is the whole idea:
 2. Restart Claude Code (hooks load at startup). Capture begins.
 3. Work normally. Once per session, after real work, Claude asks to record a
    short note of what changed.
-4. Next morning: `/alibi-day yesterday`. Review the table, approve the entry,
-   done.
+4. Whenever it suits you: `/alibi-day`. It reconciles every pending day
+   before today in one pass. Review the drafts, approve, done.
 
 Alibi records **nothing** until it is configured, and stays permanently silent
 if you decline setup.
@@ -31,7 +31,7 @@ if you decline setup.
 |---|---|
 | `/alibi-setup` | Set up or reconfigure projects and log destination |
 | `/alibi-note` | Record what this session worked on, right now |
-| `/alibi-day [date]` | Reconcile a day into the work log (`yesterday`, `today`, `2026-08-01`) |
+| `/alibi-day [date]` | Reconcile every pending day before today, or just one date (`yesterday`, `today`, `2026-08-01`) |
 | `/alibi-help [topic]` | This guide |
 
 ## Configuration

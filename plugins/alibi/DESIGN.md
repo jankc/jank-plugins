@@ -293,6 +293,17 @@ bug, so the happy path needs a positive check, not just silent error paths:
 run `session-start` with a configured `ALIBI_HOME` *inside a git repo* and
 assert that `<alibi>` context is actually printed.
 
+**Pending days dropping off the list.** `unreconciled_days` looked at only the
+newest 10 journal files, and reconciled days used up that window too. A day
+skipped while later ones were reconciled vanished from the reminder about a
+week later, still unreconciled. It also checked each day's own file for its
+marker, so markers written before 0.3.2 (filed under the day they were written)
+did not count. It now reads the whole journal, a few milliseconds, and takes a
+marker naming the date from any file. Session start shows the newest seven and
+how many more there are; `status` lists them all. Multi-day reconciliation is a
+procedure in the skill, not a script feature: `day` stays one date, and the
+agent loops, batching the questions and writing one day at a time.
+
 **Normalizing a tiny day.** A 20-minute day reported 8h in the normalized
 column. Hence the 50% floor.
 
@@ -315,8 +326,10 @@ records).
 
 - **Jira/tracker write-back.** Needs credentials, and is risky to distribute
   company-wide. If asked, say it is out of scope.
-- **Weekly rollup** (`/alibi-week`) and **backfill** for days before install.
-  Both are plausible v2 features.
+- **Weekly rollup** (`/alibi-week`), one combined entry per week, and
+  **backfill** for days before install. Both are plausible v2 features.
+  `/alibi-day` already reconciles every pending day in one pass, but each day
+  keeps its own entry.
 - **Beat-density weighting** for overlap splits — see step 2 above.
 - **Prompt text in the journal.** It would improve recall considerably and was
   explicitly rejected: prompts on disk in plaintext is the wrong trade for a
@@ -380,7 +393,8 @@ End-to-end still requires an install and a restart:
 /plugin install alibi@jank-plugins
 ```
 
-Run `python3 tests/test_beats.py` for the block accounting.
+Run `python3 tests/test_beats.py` for the block accounting and
+`python3 tests/test_pending.py` for the unreconciled-day list.
 Check `/hooks` lists all four, that a `session` record and `start`/`stop` beats
 appear, that the nudge fires exactly once, and that a second Stop does not
 re-nudge.

@@ -572,39 +572,36 @@ def first_run_context():
     ])
 
 
-def unreconciled_days(cfg, limit=7):
-    """Days with real activity and no rollup record, most recent first."""
-    out = []
+def unreconciled_days(cfg):
+    """Days before today with real activity and no rollup record, newest first.
+
+    Reads the whole journal - a few ms for months of it. A window of the newest
+    N files used to bound this, but reconciled days used up the window too, so
+    one missed day silently dropped off the list a week later. A day counts as
+    reconciled when any file holds a marker naming it: markers written before
+    0.3.2 were filed under the day they were written, not the day they close.
+    """
+    rolled, turns = set(), {}
     try:
-        entries = sorted(os.listdir(os.path.join(home(), "journal")),
-                         reverse=True)
+        names = os.listdir(os.path.join(home(), "journal"))
     except Exception:
-        return out
+        return []
     today = now().date()
-    for name in entries[:limit + 3]:
+    for name in names:
         if not name.endswith(".jsonl"):
             continue
         try:
             date = datetime.strptime(name[:-6], "%Y-%m-%d").date()
         except Exception:
             continue
-        if date >= today:
-            continue
         records = read_journal(date)
-        # Match the marker's own date, as cmd_day does. Accepting any rollup
-        # record in the file made a marker misfiled from another day clear this
-        # one too, hiding a day that was never reconciled.
-        if any(r.get("t") == "rollup" and r.get("date") == date.isoformat()
-               for r in records):
-            continue
-        if sum(1 for r in records
-               if r.get("t") == "beat"
-               and r.get("k") != "start") < cfg["min_turns"]:
-            continue
-        out.append(date.isoformat())
-        if len(out) >= limit:
-            break
-    return out
+        rolled.update(r.get("date") for r in records if r.get("t") == "rollup")
+        if date < today:
+            turns[date.isoformat()] = sum(
+                1 for r in records
+                if r.get("t") == "beat" and r.get("k") != "start")
+    return sorted((d for d, n in turns.items()
+                   if n >= cfg["min_turns"] and d not in rolled), reverse=True)
 
 
 def cmd_session_start(argv):
@@ -674,10 +671,13 @@ def cmd_session_start(argv):
     pending = unreconciled_days(cfg)
     if pending:
         parts.append("")
-        parts.append("Unreconciled day(s) with recorded activity: %s"
-                     % ", ".join(pending))
-        parts.append("Mention this once, early, and offer to run /alibi-day "
-                     "for the most recent one. Do not push if declined.")
+        parts.append("Unreconciled day(s) with recorded activity: %s%s"
+                     % (", ".join(pending[:7]),
+                        " (and %d older)" % (len(pending) - 7)
+                        if len(pending) > 7 else ""))
+        parts.append("Mention this once, early, and offer to run /alibi-day, "
+                     "which reconciles every pending day before today. Do not "
+                     "push if declined.")
 
     parts.append("")
     parts.append("Configured projects (~/.alibi/projects.md):")

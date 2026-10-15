@@ -154,16 +154,40 @@ Then:
    is personal time — it may be mentioned in conversation, but it never goes
    into the entry.
 3. **Draft the entry** in the format below and show it before writing.
-4. **Write it** to the log path named at the bottom of the report, **newest
-   first**: insert the entry above the topmost `## YYYY-MM-DD` heading already
-   in the file, directly under the `# YYYY-MM` title — or immediately under the
-   configured `heading` if there is one. Create the file with a `# YYYY-MM`
-   title if it does not exist. **Never rewrite an existing day** — if the date
-   is already present, show the user the conflict and ask.
+4. **Write it** to the log path named at the bottom of the report, keeping the
+   file **newest first**: insert the entry directly above the first
+   `## YYYY-MM-DD` heading with an *older* date, or after the last day if every
+   day in the file is newer. Usually that is the top, under the `# YYYY-MM`
+   title (or the configured `heading`), but a late-reconciled day goes between
+   its neighbours, not on top. Create the file with a `# YYYY-MM` title if it
+   does not exist. **Never rewrite an existing day** — if the date is already
+   present, show the user the conflict and ask.
 5. **Mark it done**: `python3 "$ALIBI_SCRIPT" mark-rolled 2026-08-01`
 
 Only run `mark-rolled` after the entry is actually written and the user has
 confirmed it. It is what stops the day being nudged again.
+
+## Reconciling several days
+
+`/alibi-day` with no argument (or `pending`) reconciles every unreconciled day
+before today in one pass. `python3 "$ALIBI_SCRIPT" status` lists them on its
+`unreconciled:` line, newest first. Today is never included: it is not over.
+
+1. **Run `day` for each pending date, oldest first**, and work through them as
+   above, but batch the questions: propose each unmapped directory once even if
+   several days flag it, and ask about ticket gaps together.
+2. **Show every day's table and draft together**, one `## YYYY-MM-DD` entry per
+   day, and get one approval for the batch. The user may correct or drop any
+   single day. A day that turns out to hold only `NOT REPORTED` time gets no
+   entry; say so, and it is still marked reconciled below.
+3. **Then write and mark one day at a time, oldest first**: insert the entry
+   by date as in step 4 above, run `mark-rolled` for that date, move to the
+   next. Each report names its own log path, so a batch crossing a month
+   boundary writes to two files. If anything stops midway, every day is either
+   fully done or still pending, never half.
+
+More than a week pending: offer to go a week at a time, oldest first, so each
+approval stays reviewable.
 
 ### Entry format
 
