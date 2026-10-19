@@ -265,6 +265,13 @@ uninstall in a week.
   repositories.** The journal records timestamps, paths and branch names — never
   prompts, code, or conversation content. This is a distributed plugin; the
   privacy claim in the README must stay true.
+- **Off-Claude activity is read agent-side, at reconcile time only.** When the
+  user has the local OpenHistory MCP server (`127.0.0.1`) configured,
+  `/alibi-day` reads that day's timeline through it, like it reads git
+  commits — capture stays dumb and everything stays local. Its data is highly
+  private, so the skill filters it with a work-signal allowlist before anything
+  else, never mentions what it dropped, and proposes only what the user
+  confirms. Optional: without the server nothing changes.
 
 ---
 
@@ -330,6 +337,9 @@ records).
   **backfill** for days before install. Both are plausible v2 features.
   `/alibi-day` already reconciles every pending day in one pass, but each day
   keeps its own entry.
+- **The script calling OpenHistory.** It would need the server's token outside
+  the MCP config. Likewise no OpenHistory in the Stop-hook note, and no exact
+  time accounting from its ~10-minute episodes — they are proposals.
 - **Beat-density weighting** for overlap splits — see step 2 above.
 - **Prompt text in the journal.** It would improve recall considerably and was
   explicitly rejected: prompts on disk in plaintext is the wrong trade for a

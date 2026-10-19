@@ -141,8 +141,9 @@ overlap is reported, so you can see it rather than having it quietly folded in.
 When measured time falls below half the target, the normalized column is
 suppressed rather than stretching 20 minutes into a working day.
 
-Alibi only sees what happened in Claude Code. Meetings, code review and
-everything else are yours to add.
+Alibi only measures what happened in Claude Code. Meetings, code review and
+everything else are yours to add — or, if you run the local OpenHistory MCP
+server, `/alibi-day` proposes them from it for you to accept or reject.
 
 ## Privacy
 

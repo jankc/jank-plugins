@@ -100,7 +100,8 @@ session off the log.
   suppressed rather than stretching 20 minutes into a working day — Alibi
   does not invent numbers.
 - Meetings, code review and everything outside Claude Code are yours to add
-  when you approve the entry.
+  when you approve the entry — or, with the OpenHistory MCP configured,
+  proposed for you (see the FAQ).
 
 ## Privacy and data
 
@@ -150,6 +151,16 @@ array in `~/.claude/settings.json` (merge with what is already there):
 The Bash rule is safe to allow: the script is local-only, writes nowhere but
 `~/.alibi`, and never touches the network or an issue tracker. Takes effect
 in new sessions.
+
+**Can it pick up meetings and reviews outside Claude Code?**
+If the local OpenHistory MCP server (`openhistory`) is configured,
+`/alibi-day` also reads that day's activity from it and proposes an
+`OFF-CLAUDE WORK` section. Only episodes with a clear work signal — a ticket
+matching a project's `ticket:` hint, that project's tracker or MR, or a work
+meeting (one naming no project is proposed with the project left for you to
+pick) — are kept; everything else is dropped unseen, never listed or
+counted, never written anywhere. Times are rough and nothing enters the log
+until you accept each line. Without the server, nothing changes.
 
 **I declined setup and changed my mind.**
 `/alibi-setup` — it removes the decline marker.
