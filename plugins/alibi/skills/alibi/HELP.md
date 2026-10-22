@@ -100,7 +100,7 @@ session off the log.
   suppressed rather than stretching 20 minutes into a working day — Alibi
   does not invent numbers.
 - Meetings, code review and everything outside Claude Code are yours to add
-  when you approve the entry — or, with the OpenHistory MCP configured,
+  when you approve the entry — or, with OpenHistory or LokalBot set up,
   proposed for you (see the FAQ).
 
 ## Privacy and data
@@ -153,9 +153,11 @@ The Bash rule is safe to allow: the script is local-only, writes nowhere but
 in new sessions.
 
 **Can it pick up meetings and reviews outside Claude Code?**
-If the local OpenHistory MCP server (`openhistory`) is configured,
-`/alibi-day` also reads that day's activity from it and proposes an
-`OFF-CLAUDE WORK` section. Only episodes with a clear work signal — a ticket
+If the local OpenHistory MCP server (`openhistory`) or LokalBot (its
+`lokalbot` MCP server or `lokalbot-cli`) is set up, `/alibi-day` also reads
+that day's activity and meetings from whichever is there and proposes an
+`OFF-CLAUDE WORK` section. Either, both or neither works; a missing one is
+skipped without a word. Only episodes with a clear work signal — a ticket
 matching a project's `ticket:` hint, that project's tracker or MR, or a work
 meeting (one naming no project is proposed with the project left for you to
 pick) — are kept; everything else is dropped unseen, never listed or
