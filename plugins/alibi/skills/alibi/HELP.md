@@ -86,7 +86,11 @@ session off the log.
   `idle_gap_minutes` ends it — that gap is your meeting or lunch, and it is
   not counted. So you get *active* time, not "the terminal was open
   09:00–18:00". The stretch between your prompt and the end of its response
-  always counts, however long Claude worked on it.
+  counts, however long Claude worked on it — except time spent waiting on
+  you: a permission prompt or a question left unanswered past
+  `idle_gap_minutes` is not counted. Tool calls leave a timestamp too (at
+  most one a minute), so background agents still working after a response
+  ended are counted as well.
 - Each block is extended `lead_in_minutes` backwards, crediting the time you
   spent writing the prompt.
 - When two sessions run at once, each minute is split evenly between them —

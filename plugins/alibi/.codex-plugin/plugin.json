@@ -1,6 +1,6 @@
 {
   "name": "alibi",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Passive work-log capture and daily reconciliation - turns Claude Code sessions into a timesheet-ready log of tickets and internal projects",
   "author": {
     "name": "Jan Krapac"

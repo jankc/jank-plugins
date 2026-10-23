@@ -419,27 +419,37 @@ def blocks_from_beats(beats, idle_gap_minutes, lead_in_minutes):
     recorded before start beats existed carry no kind and count as stops, so
     older journals collapse exactly as they did.
 
+    "tool" is a throttled heartbeat from PostToolUse, "wait" marks the
+    session stopping to ask the user (a permission prompt, a question).
+
     A gap longer than idle_gap ends a block - that gap is the meeting, the
-    lunch, the school run. The one gap that is never idle is the one between
-    a start and the stop that closes it: that is a response being produced,
-    however long it ran. Each block is extended backwards by lead_in to
-    account for the time spent writing the prompt before the turn ran.
+    lunch, the school run. The one gap that is never idle is a gap inside a
+    turn - after its start, before its stop - that does not follow a wait:
+    that is a response being produced, however long it ran. A gap after a
+    wait is the user being asked, and is idle like any other once it runs
+    past idle_gap. Each block is extended backwards by lead_in to account
+    for the time spent writing the prompt before the turn ran.
     """
     if not beats:
         return []
-    beats = sorted(beats)
+    beats = sorted(beats, key=lambda beat: beat[0])
     gap = timedelta(minutes=idle_gap_minutes)
     lead = timedelta(minutes=lead_in_minutes)
     blocks = []
     run = [beats[0][0]]
     prev_kind = beats[0][1]
+    in_turn = prev_kind == "start"
     for ts, kind in beats[1:]:
-        inside_turn = prev_kind == "start" and kind != "start"
-        if ts - run[-1] > gap and not inside_turn:
+        working = in_turn and prev_kind != "wait" and kind != "start"
+        if ts - run[-1] > gap and not working:
             blocks.append((run[0] - lead, run[-1]))
             run = [ts]
         else:
             run.append(ts)
+        if kind == "start":
+            in_turn = True
+        elif kind not in ("tool", "wait"):
+            in_turn = False
         prev_kind = kind
     blocks.append((run[0] - lead, run[-1]))
 
@@ -599,7 +609,7 @@ def unreconciled_days(cfg):
         if date < today:
             turns[date.isoformat()] = sum(
                 1 for r in records
-                if r.get("t") == "beat" and r.get("k") != "start")
+                if r.get("t") == "beat" and r.get("k") in (None, "stop"))
     return sorted((d for d, n in turns.items()
                    if n >= cfg["min_turns"] and d not in rolled), reverse=True)
 
@@ -724,6 +734,60 @@ def cmd_prompt(argv):
 
 
 # --------------------------------------------------------------------------
+# subcommands: tool / wait
+# --------------------------------------------------------------------------
+
+TOOL_BEAT_SECONDS = 60
+
+
+def cmd_tool(argv):
+    """PostToolUse: a heartbeat inside a long turn, at most one a minute.
+
+    Start and stop alone cannot tell a turn that worked for an hour from one
+    that sat on a permission prompt for an hour. Tool beats show the work,
+    and they keep coming from background subagents after the turn has ended.
+
+    Throttled by a marker file's mtime rather than the state file, so a burst
+    of parallel tool calls cannot race `turn`'s read-modify-write of state.
+    """
+    if not os.path.exists(projects_path()):
+        return 0
+    data = read_hook_input()
+    sid = data.get("session_id") or os.environ.get("ALIBI_SID") or ""
+    marker = state_path(sid)[:-len(".json")] + ".beat"
+    stamp = now()
+    try:
+        if stamp.timestamp() - os.path.getmtime(marker) < TOOL_BEAT_SECONDS:
+            return 0
+    except OSError:
+        pass
+    try:
+        os.makedirs(os.path.dirname(marker), exist_ok=True)
+        with open(marker, "w", encoding="utf-8"):
+            pass
+    except Exception:
+        return 0
+    append_record({"t": "beat", "at": stamp.isoformat(), "sid": sid,
+                   "k": "tool"})
+    return 0
+
+
+def cmd_wait(argv):
+    """Notification (permission prompt) / PreToolUse (a question to the user).
+
+    The session is now waiting for the user; the gap until the next beat is
+    the user's, not a response being produced, so `day` does not bridge it.
+    """
+    if not os.path.exists(projects_path()):
+        return 0
+    data = read_hook_input()
+    sid = data.get("session_id") or os.environ.get("ALIBI_SID") or ""
+    append_record({"t": "beat", "at": now().isoformat(), "sid": sid,
+                   "k": "wait"})
+    return 0
+
+
+# --------------------------------------------------------------------------
 # subcommand: turn
 # --------------------------------------------------------------------------
 
@@ -805,10 +869,11 @@ def cmd_session_end(argv):
     data = read_hook_input()
     sid = data.get("session_id") or os.environ.get("ALIBI_SID") or ""
     append_record({"t": "end", "at": now().isoformat(), "sid": sid})
-    try:
-        os.remove(state_path(sid))
-    except Exception:
-        pass
+    for path in (state_path(sid), state_path(sid)[:-len(".json")] + ".beat"):
+        try:
+            os.remove(path)
+        except Exception:
+            pass
     return 0
 
 
@@ -1246,6 +1311,8 @@ COMMANDS = {
     "session-start": cmd_session_start,
     "turn": cmd_turn,
     "prompt": cmd_prompt,
+    "tool": cmd_tool,
+    "wait": cmd_wait,
     "session-end": cmd_session_end,
     "note": cmd_note,
     "decline": cmd_decline,
@@ -1255,7 +1322,8 @@ COMMANDS = {
     "day": cmd_day,
 }
 
-HOOK_COMMANDS = ("session-start", "prompt", "turn", "session-end")
+HOOK_COMMANDS = ("session-start", "prompt", "tool", "wait", "turn",
+                 "session-end")
 
 
 def main(argv):
