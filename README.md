@@ -22,6 +22,7 @@ the same way.
 | Plugin | What it does |
 |---|---|
 | [`alibi`](plugins/alibi/) | Passive work-log capture and daily reconciliation — records which repo, branch and ticket you worked on and for how long, then turns a messy day into one timesheet-ready entry per project. |
+| [`workbench`](plugins/workbench/) | Personal coding-workflow skills (Claude Code only). `worktree-ready` audits whether a worktree is done and safe to delete; `ship-openspec-change` drives existing OpenSpec changes from proposal to a reviewed implementation with subagents — Sonnet implements, Opus verifies and reviews, Fable advises on the big picture, with review depth scaled to the size of the change. |
 
 ## Layout
 
