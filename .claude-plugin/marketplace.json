@@ -13,7 +13,7 @@
     {
       "name": "workbench",
       "source": "./plugins/workbench",
-      "description": "Personal coding-workflow skills — starting with worktree-ready, an is-this-branch-done audit before you delete a worktree"
+      "description": "Personal coding-workflow skills — worktree-ready (an is-this-branch-done audit before you delete a worktree) and ship-openspec-change (drive OpenSpec changes from proposal to reviewed implementation with subagents)"
     }
   ]
 }
